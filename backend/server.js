@@ -1,0 +1,30 @@
+import express from 'express'
+import dotenv from 'dotenv'
+import cookieParser from 'cookie-parser';
+import cors from 'cors'
+import connectedDb from './database/db.js';
+import morgan from 'morgan';
+dotenv.config()
+
+const app = express()
+
+const PORT = process.env.PORT || 4002;
+
+
+app.use(express.json())
+app.use(morgan("tiny"))
+app.use(cookieParser())
+app.use(cors({
+    credentials : true,
+    origin:process.env.ORGIN
+}))
+
+
+app.listen(PORT, () => {
+    console.log(`Server in runnig at Port ${PORT} Successfully . . . . .`)
+    connectedDb()
+})
+
+
+
+
