@@ -1,6 +1,7 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser';
+import authRoutes from './routes/authRoutes.js'
 import cors from 'cors'
 import connectedDb from './database/db.js';
 import morgan from 'morgan';
@@ -18,6 +19,8 @@ app.use(cors({
     credentials : true,
     origin:process.env.ORGIN
 }))
+
+app.use('/auth', authRoutes)
 
 
 app.listen(PORT, () => {
