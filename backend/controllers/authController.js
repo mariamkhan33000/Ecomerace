@@ -3,10 +3,12 @@ import bcrypt from "bcryptjs";
 import generateOTP from "../utils/GenerateOtp.js";
 import { sendEmail } from "../utils/Emails.js";
 import { templateEmail } from "../utils/templateEmail.js";
+import PasswordResetToken from "../models/PasswordResetToken.js";
 import sanitizeUser from "../utils/SanitizeUser.js";
 import Otp from "../models/Otp.js";
 import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/GenerateToken.js";
+import PasswordResetToken from "../models/PasswordResetToken.js";
 
 export const signUp = async (req, res) => {
     try {
@@ -127,5 +129,139 @@ export const verifyOtp = async (req, res) => {
     } catch (error) {
         console.error("Error during OTP verification:", error);
         res.status(500).json({ message: "An error occurred while verifying OTP" });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    let newTokenDoc;
+
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const isExistingUser = await User.findOne({ email });
+
+        if (!isExistingUser) {
+            return res.status(404).json({ message: "Provided email does not exist" });
+        }
+
+        // Generate password reset token using JWT
+        const passwordResetToken = jwt.sign(
+            { id: isExistingUser._id, email: isExistingUser.email },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRATION_TIME } // e.g., "15m"
+        );
+
+        const hashedToken = await bcrypt.hash(passwordResetToken, 10);
+
+        // Optional: remove previous reset tokens for the user
+        await PasswordResetToken.deleteMany({ user: isExistingUser._id });
+
+        // Save hashed token to DB
+        newTokenDoc = new PasswordResetToken({
+            user: isExistingUser._id,
+            token: hashedToken,
+            expiresAt: Date.now() + parseInt(process.env.OTP_EXPIRATION_TIME),
+        });
+
+        await newTokenDoc.save();
+
+        // Send email with reset link
+        const resetLink = `${process.env.ORIGIN}/reset-password/${isExistingUser._id}/${passwordResetToken}`;
+
+        const emailBody = `
+            <p>Dear ${isExistingUser.name},</p>
+            <p>We received a request to reset your password. If you initiated this request, click below:</p>
+            <p><a href="${resetLink}" target="_blank">Reset Password</a></p>
+            <p>This link is valid for a limited time. If you did not request a password reset, please ignore this email.</p>
+            <p>Thank you,<br/>The MERN-AUTH-REDUX-TOOLKIT Team</p>
+        `;
+
+        await sendEmail(
+            isExistingUser.email,
+            "Password Reset - MERN-AUTH-REDUX-TOOLKIT",
+            emailBody
+        );
+
+        res.status(200).json({ message: `Password reset link sent to ${isExistingUser.email}` });
+
+    } catch (error) {
+        console.error("Forgot password error:", error);
+
+        // Cleanup if error occurs after token is saved
+        if (newTokenDoc) {
+            await PasswordResetToken.findByIdAndDelete(newTokenDoc._id);
+        }
+
+        res.status(500).json({ message: "Error occurred while processing password reset" });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { userId, token, password } = req.body;
+
+        if (!userId || !token || !password) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Check if user exists
+        const existingUser = await User.findById(userId);
+        if (!existingUser) {
+            return res.status(404).json({ message: "User does not exist" });
+        }
+
+        // Find reset token
+        const resetTokenDoc = await PasswordResetToken.findOne({ user: userId });
+        if (!resetTokenDoc) {
+            return res.status(404).json({ message: "Reset link is not valid" });
+        }
+
+        // Check if token has expired
+        if (resetTokenDoc.expiresAt < Date.now()) {
+            await PasswordResetToken.findByIdAndDelete(resetTokenDoc._id);
+            return res.status(400).json({ message: "Reset link has expired" });
+        }
+
+        // Validate token
+        const isTokenValid = await bcrypt.compare(token, resetTokenDoc.token);
+        if (!isTokenValid) {
+            return res.status(400).json({ message: "Invalid or expired reset token" });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update user password
+        existingUser.password = hashedPassword;
+        await existingUser.save();
+
+        // Clean up reset token
+        await PasswordResetToken.findByIdAndDelete(resetTokenDoc._id);
+
+        res.status(200).json({ message: "Password updated successfully" });
+
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Error occurred while resetting the password" });
+    }
+};
+
+export const logOut = async (req, res) => {
+    try {
+        // Clear the token from cookies
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
+
+        res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Error during logout:", error);
+        res.status(500).json({ message: "Error occurred while logging out" });
     }
 };
