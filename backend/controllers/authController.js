@@ -265,3 +265,17 @@ export const logOut = async (req, res) => {
         res.status(500).json({ message: "Error occurred while logging out" });
     }
 };
+
+
+export const checkAuth = async (req, res) => {
+    try {
+        if (req.user) {
+            return res.status(200).json({ user: req.user });
+        } else {
+            return res.sendStatus(401); // Unauthorized
+        }
+    } catch (error) {
+        console.error("Error checking auth:", error);
+        return res.sendStatus(500); // Internal Server Error
+    }
+};
