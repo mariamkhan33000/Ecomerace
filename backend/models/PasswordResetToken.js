@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const passwordResetTokenSchema = new mongoose.Schema({
     user  :{
-        type : mongoose.Types.ObjectId;
+        type : mongoose.Types.ObjectId,
         ref : "User",
-        required : True
+        required : true
     },
     token : {
         type : String,

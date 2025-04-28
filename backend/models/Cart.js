@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 
 
-export const itemSchema = new mongoose.Schema({
+exports.itemSchema = new mongoose.Schema({
     product:{
         type:Schema.Types.ObjectId,
         ref:"Product",

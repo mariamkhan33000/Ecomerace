@@ -14,4 +14,3 @@ router.post('/logout', logOut)
 
 
 export default router;
-co

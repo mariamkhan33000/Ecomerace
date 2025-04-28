@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js'
 import cors from 'cors'
 import connectedDb from './database/db.js';
 import morgan from 'morgan';
+import productRoute from './routes/productRoutes.js'
 dotenv.config()
 
 const app = express()
@@ -21,6 +22,7 @@ app.use(cors({
 }))
 
 app.use('/auth', authRoutes)
+app.use('/product', productRoute)
 
 
 app.listen(PORT, () => {

@@ -8,7 +8,6 @@ import sanitizeUser from "../utils/SanitizeUser.js";
 import Otp from "../models/Otp.js";
 import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/GenerateToken.js";
-import PasswordResetToken from "../models/PasswordResetToken.js";
 
 export const signUp = async (req, res) => {
     try {
@@ -265,7 +264,6 @@ export const logOut = async (req, res) => {
         res.status(500).json({ message: "Error occurred while logging out" });
     }
 };
-
 
 export const checkAuth = async (req, res) => {
     try {
