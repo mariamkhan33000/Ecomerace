@@ -3,6 +3,9 @@ import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js'
 import orderRoute from './routes/ordrerRoutes.js'
+import cartRoute from './routes/cartRoutes.js'
+import brandRoutes from './routes/brandRoutes.js'
+import categoryRoute from './routes/categoryRoutes.js'
 import cors from 'cors'
 import connectedDb from './database/db.js';
 import morgan from 'morgan';
@@ -25,6 +28,9 @@ app.use(cors({
 app.use('/auth', authRoutes)
 app.use('/product', productRoute)
 app.use('/orders', orderRoute)
+app.use('/carts', cartRoute)
+app.use('/brands', brandRoutes)
+app.use('/categories', categoryRoute)
 
 
 app.listen(PORT, () => {
